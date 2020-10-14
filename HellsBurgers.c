@@ -10,14 +10,13 @@
 
 //declaro e inicializo los mutex
 pthread_mutex_t salero = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t cocina = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t plancha = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t horno = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutex4 = PTHREAD_MUTEX_INITIALIZER;
 
 //creo estructura de semaforos 
 struct semaforos {
     	sem_t sem_mezclar;
-    	sem_t sem_ensalar;
+    	sem_t sem_salar;
 	sem_t sem_armarMed;
 	sem_t sem_cocMed;
 	sem_t sem_armarHambur;
@@ -130,7 +129,7 @@ void* mezclar(void *data) {
 	escribirAccion(midata,accion);
 
 	usleep(2000000);
-	sem_post(&midata->semaforos_param.sem_ensalar);
+	sem_post(&midata->semaforos_param.sem_salar);
 
 	pthread_exit(NULL);
 }
@@ -140,7 +139,7 @@ void* salar(void *data){
 
 	struct parametro *midata = data;
 
-	sem_wait(&midata->semaforos_param.sem_ensalar);
+	sem_wait(&midata->semaforos_param.sem_salar);
 	pthread_mutex_lock(&salero);
 
 	char *accion = "salar";
@@ -150,8 +149,8 @@ void* salar(void *data){
 
 	usleep(2000000);
 
-	sem_post(&midata->semaforos_param.sem_armarMed);
 	pthread_mutex_unlock(&salero);
+	sem_post(&midata->semaforos_param.sem_armarMed);
 
 	pthread_exit(NULL);
 }
@@ -175,12 +174,12 @@ void* armar_medallones(void *data){
 }
 
 //-------------------------------------------------------
-void* plancha(void *data){
+void* cocinar(void *data){
 
 	struct parametro *midata = data;
 
 	sem_wait(&midata->semaforos_param.sem_cocMed);
-	pthread_mutex_lock(&cocina);
+	pthread_mutex_lock(&plancha);
 
 	char *accion = "cocinar";
 
@@ -188,8 +187,9 @@ void* plancha(void *data){
 	escribirAccion(midata,accion);
 	
 	usleep(5000000);
+
+	pthread_mutex_unlock(&plancha);
 	sem_post(&midata->semaforos_param.sem_armarHambur);	
-	pthread_mutex_unlock(&cocina);
 
 	pthread_exit(NULL);
 }
@@ -287,7 +287,7 @@ void* prepararHamburguesas(void *i){
 
 	//variables semaforos
 	sem_t sem_mezclar;
-	sem_t sem_ensalar;
+	sem_t sem_salar;
 	sem_t sem_armarMed;
 	sem_t sem_cocMed;
 	sem_t sem_armarHambur;
@@ -318,13 +318,13 @@ void* prepararHamburguesas(void *i){
 	//seteo semaforos
 	
 	pthread_data->semaforos_param.sem_mezclar = sem_mezclar;
-	pthread_data->semaforos_param.sem_ensalar = sem_ensalar;
+	pthread_data->semaforos_param.sem_salar = sem_salar;
 	pthread_data->semaforos_param.sem_armarMed = sem_armarMed;
 	pthread_data->semaforos_param.sem_cocMed = sem_cocMed;
 	pthread_data->semaforos_param.sem_armarHambur = sem_armarHambur;
 
 
-	FILE * flujo = fopen("receta.txt", "rb");
+	FILE * flujo = fopen("receta.txt", "r");
 
 	if(flujo == NULL) {
 		printf("Error al abrir el archivo!");
@@ -377,7 +377,7 @@ void* prepararHamburguesas(void *i){
 
 	//inicializo los semaforos
 	sem_init(&(pthread_data->semaforos_param.sem_mezclar),0,0);
-	sem_init(&(pthread_data->semaforos_param.sem_ensalar),0,0);
+	sem_init(&(pthread_data->semaforos_param.sem_salar),0,0);
 	sem_init(&(pthread_data->semaforos_param.sem_armarMed),0,0);
 	sem_init(&(pthread_data->semaforos_param.sem_cocMed),0,0);
 	sem_init(&(pthread_data->semaforos_param.sem_armarHambur),0,0);
@@ -392,7 +392,7 @@ void* prepararHamburguesas(void *i){
 	rc = pthread_create(&p2, NULL, mezclar, pthread_data);
 	rc = pthread_create(&p3, NULL, salar, pthread_data);
 	rc = pthread_create(&p4, NULL, armar_medallones, pthread_data);
-	rc = pthread_create(&p5, NULL, plancha, pthread_data);
+	rc = pthread_create(&p5, NULL, cocinar, pthread_data);
 	rc = pthread_create(&p6, NULL, hornear, pthread_data);
 	rc = pthread_create(&p7, NULL, cortar_ingredientesII, pthread_data);
 	rc = pthread_create(&p8, NULL, armar_hamburguesas, pthread_data);
@@ -417,14 +417,14 @@ void* prepararHamburguesas(void *i){
 	 
 	//destruccion de los semaforos 
 	sem_destroy(&sem_mezclar);
-	sem_destroy(&sem_ensalar);
+	sem_destroy(&sem_salar);
 	sem_destroy(&sem_armarMed);
 	sem_destroy(&sem_cocMed);
 	sem_destroy(&sem_armarHambur);
 
 	//destruccion de los mutex
 	pthread_mutex_destroy(&salero);
-	pthread_mutex_destroy(&cocina);
+	pthread_mutex_destroy(&plancha);
 	pthread_mutex_destroy(&horno);
 
 	
