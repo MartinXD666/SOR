@@ -1,0 +1,8 @@
+cortar_ingredientesI ajo cebolla perejil
+mezclar ajo cebolla perejil carne_picada
+salar sal mezcla_preparada
+armar_medallones mezcla_armada
+cocinar medallones_preparados 
+hornear panes
+cortar_ingredientesII lechuga tomate
+armar_hamburguesas lechuga_cortada tomate_cortado medallones_cocinados panes_horneados
